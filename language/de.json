@@ -1,0 +1,6 @@
+{
+  "renaming.notwork": "Die Datei '%file%' konnte nicht umbenannt werden",
+  "renaming.notneed": "Die Datei '%file%' muss nicht geändert werden",
+  "renaming.filenotfound": "Die Datei '%file%' konnte nicht gefunden werden",
+  "renaming.completed": "Die Datei '%file%' wurde in '%newfile%' umbenannt"
+}

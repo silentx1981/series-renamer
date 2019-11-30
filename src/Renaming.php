@@ -2,11 +2,18 @@
 
 namespace SeriesRenamer;
 
-use SeriesRenamer\Core\Config;
 use ReflectionClass;
+use SeriesRenamer\Core\Config;
+use SeriesRenamer\Core\Translate;
 
 class Renaming
 {
+    const STATUS_UNDEFINED = 0;
+    const STATUS_OK = 200;
+    const STATUS_NOT_MODIFIED = 304;
+    const STATUS_NOT_FOUND = 404;
+    const STATUS_CONFLICT = 409;
+
     private $config;
 
     public function __construct()
@@ -17,13 +24,11 @@ class Renaming
 
     public function run()
     {
-        echo "<pre>";
-        echo "Run Renaming <hr>";
-
         $files = $this->getFiles();
         $infoFiles = $this->getFileInfos($files);
-        $this->processRenaming($infoFiles);
+        $data = $this->processRenaming($infoFiles);
 
+        echo json_encode($data);
     }
 
     private function getFiles()
@@ -102,35 +107,52 @@ class Renaming
 
     private function processRenaming($files)
     {
+        $trans = new Translate();
+
+        $result = [];
         foreach ($files as $file) {
             $raw = $file['raw'] ?? null;
             $new = $file['new'] ?? null;
+            $row = [
+                'file' => $file,
+                'raw' => $raw,
+                'message' => null,
+                'status' => self::STATUS_UNDEFINED,
+            ];
 
             if ($raw === null || $new === null) {
-                echo "Folgende Datei konnte nicht umbenannt werden <br>";
-                print_r($file);
-                echo '<hr>';
+                $row['message'] = $trans->translate('renaming.notwork', ['file' => $file]);
+                $row['status'] = self::STATUS_CONFLICT;
+                $result[] = $row;
                 continue;
             }
 
             if ($raw === $new) {
-                echo "$raw muss nicht geändert werden <br>";
+                $row['message'] = $trans->translate('renaming.notneed', ['file' => $raw]);
+                $row['status'] = self::STATUS_OK;
+                $result[] = $row;
                 continue;
             }
 
             $rawFile = $this->config['filesDirectory'].'/'.$raw;
             if (!file_exists($rawFile)) {
-                echo "$raw konnte nicht gefunden werden <br>";
+                $row['message'] = $trans->translate('renaming.filenotfound', ['file' => $raw]);
+                $row['status'] = self::STATUS_NOT_FOUND;
+                $result[] = $row;
                 continue;
             }
 
             $newFile = $this->config['filesDirectory'].'/'.$new;
             if (rename($rawFile, $newFile)) {
-                echo "$raw wurde in $new umbenannt <br>";
+                $row['message'] = $trans->translate('renaming.completed', ['file' => $file, 'newfile' => $newFile]);
+                $row['status'] = self::STATUS_OK;
             } else {
-                echo "$raw konnte nicht in $new umbenannt werden <br>";
+                $row['message'] = $trans->translate('renaming.notwork', ['file' => $raw]);
+                $row['status'] = self::STATUS_CONFLICT;
             }
-
+            $result[] = $row;
         }
+
+        return $result;
     }
 }
