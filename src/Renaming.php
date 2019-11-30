@@ -10,7 +10,6 @@ class Renaming
 {
     const STATUS_UNDEFINED = 0;
     const STATUS_OK = 200;
-    const STATUS_NOT_MODIFIED = 304;
     const STATUS_NOT_FOUND = 404;
     const STATUS_CONFLICT = 409;
 
